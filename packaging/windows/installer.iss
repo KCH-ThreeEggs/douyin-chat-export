@@ -5,6 +5,8 @@
 #endif
 
 [Setup]
+
+SetupIconFile=assets\app.ico
 AppId={{F7D32FEA-DC7E-4AC3-9B0A-1D45656A2C28}
 AppName={#MyAppName}
 AppVersion={#AppVersion}

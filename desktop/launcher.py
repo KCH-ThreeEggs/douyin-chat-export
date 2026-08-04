@@ -165,6 +165,11 @@ class DesktopServer:
             port=self.port,
             log_level="info",
             access_log=False,
+            # A windowed PyInstaller executable has no stdout/stderr console.
+            # Uvicorn's default colored formatter calls .isatty() on those
+            # streams, so keep the application's file logger instead.
+            log_config=None,
+            use_colors=False,
         )
         self._server = uvicorn.Server(config)
         self._thread = threading.Thread(

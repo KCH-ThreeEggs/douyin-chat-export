@@ -51,6 +51,8 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name="DouyinChatExporter",
+
+    icon=str(project_root / "packaging" / "windows" / "assets" / "app.ico"),
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
