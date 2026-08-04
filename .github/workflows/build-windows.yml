@@ -12,6 +12,7 @@ on:
       - "extractor/**"
       - "frontend/**"
       - "packaging/windows/**"
+      - "tests/**"
       - "requirements*.txt"
       - "extract.py"
       - ".github/workflows/build-windows.yml"
@@ -25,6 +26,7 @@ on:
       - "extractor/**"
       - "frontend/**"
       - "packaging/windows/**"
+      - "tests/**"
       - "requirements*.txt"
       - "extract.py"
       - ".github/workflows/build-windows.yml"
@@ -74,9 +76,9 @@ jobs:
         shell: pwsh
         run: |
           python -m compileall -q backend common desktop extractor extract.py
+          python -m unittest tests.test_desktop_bootstrap
           $env:DOUYIN_CHAT_DATA_DIR = "$env:RUNNER_TEMP\DouyinChatExporter\data"
           python -c "from extractor.models import init_db; from common import paths; init_db(); assert paths.DB_PATH.startswith(r'$env:RUNNER_TEMP'); print(paths.DB_PATH)"
-          python -c "from desktop.main import _worker_args_from_process_argv as p; assert p(['-u','extract.py','--incremental']) == ['extract','--incremental']"
 
       - name: Bundle Playwright Chromium
         shell: pwsh
