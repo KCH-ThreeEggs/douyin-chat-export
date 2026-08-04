@@ -74,6 +74,24 @@ def worker_command(*args: str) -> list[str]:
     return [sys.executable, "-u", str(resource_dir() / "extract.py"), *args]
 
 
+def _redirect_frozen_legacy_paths() -> None:
+    """Redirect remaining ``__file__/../../data`` lookups to user data.
+
+    The upstream control panel still has a few legacy path expressions inside
+    function bodies. In a frozen build those expressions are evaluated at call
+    time, so replacing the module's ``__file__`` with a harmless synthetic path
+    makes them resolve to ``%LOCALAPPDATA%/DouyinChatExporter/data`` without
+    changing Docker/source behavior.
+    """
+    if not is_frozen():
+        return
+
+    import backend.control_panel as control_panel
+
+    synthetic_file = application_dir() / "backend" / "control_panel.py"
+    control_panel.__file__ = str(synthetic_file)
+
+
 def reserve_local_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
@@ -108,6 +126,8 @@ class DesktopServer:
     def start(self) -> None:
         import uvicorn
         from backend.main import app
+
+        _redirect_frozen_legacy_paths()
 
         config = uvicorn.Config(
             app,
