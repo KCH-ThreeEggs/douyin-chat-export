@@ -12,3 +12,6 @@ node_modules/
 CLAUDE.md
 TECHNICAL.md
 frontend/node_modules/
+build/
+dist/
+*.spec.bak
