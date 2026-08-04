@@ -1,0 +1,3 @@
+- Verify the first Windows GitHub Actions build.
+- Install and exercise login, conversation discovery, extraction and export on Windows 11 x64.
+- Add code signing before public distribution.
