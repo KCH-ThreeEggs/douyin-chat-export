@@ -1,6 +1,7 @@
 """Windows desktop runtime bootstrap for the bundled application."""
 from __future__ import annotations
 
+import logging
 import os
 import socket
 import sys
@@ -9,7 +10,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Final
+from typing import Callable, Final
 
 APP_NAME: Final = "DouyinChatExporter"
 APP_TITLE: Final = "抖音聊天导出工具"
@@ -98,17 +99,29 @@ def reserve_local_port() -> int:
         return int(sock.getsockname()[1])
 
 
-def wait_until_ready(url: str, timeout: float = 20.0) -> None:
+def wait_until_ready(
+    url: str,
+    timeout: float = 20.0,
+    failure_check: Callable[[], BaseException | None] | None = None,
+) -> None:
     deadline = time.monotonic() + timeout
     last_error: Exception | None = None
+
     while time.monotonic() < deadline:
+        if failure_check is not None:
+            failure = failure_check()
+            if failure is not None:
+                raise RuntimeError("本地服务启动失败") from failure
+
         try:
             with urllib.request.urlopen(url, timeout=1.0) as response:
                 if response.status < 500:
                     return
         except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
             last_error = exc
+
         time.sleep(0.15)
+
     raise RuntimeError(f"本地服务启动超时: {last_error}")
 
 
@@ -118,15 +131,32 @@ class DesktopServer:
         self.port = reserve_local_port()
         self._thread: threading.Thread | None = None
         self._server = None
+        self._thread_error: BaseException | None = None
 
     @property
     def base_url(self) -> str:
         return f"http://{self.host}:{self.port}"
 
+    def _run_server(self) -> None:
+        try:
+            self._server.run()
+        except BaseException as error:
+            self._thread_error = error
+            logging.exception("Local Uvicorn server thread crashed")
+
+    def _server_failure(self) -> BaseException | None:
+        if self._thread_error is not None:
+            return self._thread_error
+        if self._thread is not None and not self._thread.is_alive():
+            return RuntimeError("本地服务线程提前退出")
+        return None
+
     def start(self) -> None:
+        logging.info("Importing Uvicorn and FastAPI application")
         import uvicorn
         from backend.main import app
 
+        logging.info("Redirecting frozen legacy paths")
         _redirect_frozen_legacy_paths()
 
         config = uvicorn.Config(
@@ -138,14 +168,17 @@ class DesktopServer:
         )
         self._server = uvicorn.Server(config)
         self._thread = threading.Thread(
-            target=self._server.run,
+            target=self._run_server,
             name="douyin-chat-backend",
             daemon=True,
         )
         self._thread.start()
-        wait_until_ready(f"{self.base_url}/api/stats")
+        wait_until_ready(
+            f"{self.base_url}/api/stats",
+            failure_check=self._server_failure,
+        )
 
-    def stop(self) -> None:
+    def stop(self, *_args: object) -> None:
         if self._server is not None:
             self._server.should_exit = True
         if self._thread and self._thread.is_alive():
