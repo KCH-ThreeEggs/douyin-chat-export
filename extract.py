@@ -38,11 +38,12 @@ def _parse_args():
 
 def run_export(args):
     """Export chat data to ChatLab format (no browser needed)."""
+    from common import paths
     from extractor.exporter import ChatLabExporter
 
     fmt = args["output_format"]
     ext = ".json" if fmt == "json" else ".jsonl"
-    output_path = args["output_path"] or os.path.join("data", f"export{ext}")
+    output_path = args["output_path"] or os.path.join(paths.DATA_DIR, f"export{ext}")
 
     exporter = ChatLabExporter(
         conv_name=args["name_filter"],
@@ -82,10 +83,9 @@ async def run():
                     duration = int(arg)
             await scraper.run_discovery(duration=duration)
         elif args["mode"] == "list_conversations":
+            from common import paths
             convs = await scraper.list_conversations()
-            out_path = os.path.join(
-                os.path.dirname(__file__), "data", "conversations_list.json"
-            )
+            out_path = paths.CONVERSATIONS_LIST
             os.makedirs(os.path.dirname(out_path), exist_ok=True)
             import json as _json
             import time as _time
