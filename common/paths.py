@@ -1,15 +1,20 @@
 """Single source of truth for every filesystem path in the project.
 
-Before this module, `os.path.join(os.path.dirname(os.path.dirname(__file__)), ...)`
-was hand-rolled in 8+ places across backend/, extractor/, and the root scripts.
-All state lives under DATA_DIR, which is the single bind-mount in Docker
-(./data:/app/data) and is git-ignored.
+The Docker/source layout keeps all state under ``<repo>/data``. Desktop builds
+can override the immutable resource root and writable data root through
+environment variables set by ``desktop.main``.
 """
 import os
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-DATA_DIR = os.path.join(REPO_ROOT, "data")
+def _absolute_env(name: str, default: str) -> str:
+    value = os.environ.get(name, "").strip()
+    return os.path.abspath(os.path.expanduser(value or default))
+
+
+_SOURCE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO_ROOT = _absolute_env("DOUYIN_CHAT_RESOURCE_DIR", _SOURCE_ROOT)
+DATA_DIR = _absolute_env("DOUYIN_CHAT_DATA_DIR", os.path.join(REPO_ROOT, "data"))
 
 # Databases / config
 DB_PATH = os.path.join(DATA_DIR, "chat.db")
@@ -32,4 +37,7 @@ AVATARS_DIR = os.path.join(MEDIA_DIR, "avatars")
 VIDEOS_DIR = os.path.join(MEDIA_DIR, "videos")
 
 # Frontend build output served by the backend
-FRONTEND_DIST = os.path.join(REPO_ROOT, "frontend", "dist")
+FRONTEND_DIST = _absolute_env(
+    "DOUYIN_CHAT_FRONTEND_DIST",
+    os.path.join(REPO_ROOT, "frontend", "dist"),
+)
