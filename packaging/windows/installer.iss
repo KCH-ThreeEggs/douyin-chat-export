@@ -23,8 +23,12 @@ WizardStyle=modern
 SetupLogging=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
+; Chocolatey's Inno Setup package does not bundle user-contributed Chinese
+; translation files. Use the built-in message file so CI is deterministic.
+; The application itself remains Chinese; a localized installer can be added
+; later by vendoring a reviewed .isl file in this repository.
 [Languages]
-Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "附加任务："; Flags: unchecked
