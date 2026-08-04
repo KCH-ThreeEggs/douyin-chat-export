@@ -1,0 +1,1 @@
+This desktop wrapper preserves the upstream project license and is intended for exporting the user's own chat records.
